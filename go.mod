@@ -1,4 +1,4 @@
-module ggithub.com/fast-response/fast-response
+module github.com/fast-response/fast-response
 
 go 1.20
 
