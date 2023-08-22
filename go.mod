@@ -1,4 +1,4 @@
-module FastResponse
+module github.com/Go-FastResponse/FastResponse
 
 go 1.20
 
