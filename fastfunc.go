@@ -1,4 +1,4 @@
-package FastResponse
+package fastresponse
 
 import (
 	"unsafe"
