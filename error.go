@@ -1,4 +1,4 @@
-package FastResponse
+package fastresponse
 
 var errPages map[int]func(*Request, *Response, string, int) = map[int]func(*Request, *Response, string, int) {}
 
