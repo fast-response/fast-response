@@ -47,6 +47,9 @@ func (r *Router) MatchRoute(uri string, rule string) (bool, map[string]string) {
     for b := 0; b < ruleLength; b++ {
         i := ruleList[b]
         if (i == "") {
+            if uriList[e] != i{
+            	return false, result
+			}
             e += 1
             continue
 		}
@@ -62,7 +65,6 @@ func (r *Router) MatchRoute(uri string, rule string) (bool, map[string]string) {
                     e += num
 				} else {
                     if (b == len(ruleList) - 1) {
-                        fmt.Println(uriList[e:])
                         if(len(uriList) - e) <= 0 || (uriList[e] == "") {
                             return false, result
                         }
