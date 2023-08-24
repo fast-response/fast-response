@@ -93,6 +93,10 @@ func (res *Response) SetText(text string) {
 	res.SetBody(String2Slice(text))
 }
 
+func (res *Response) SetContentType(contentType string) {
+	res.headers["ContentType"] = []string{contentType}
+}
+
 func (res *Response) SetCode(code int) {
 	if Code[code] == "" {
 		res.Code = "500 Internal Server Error"
@@ -129,6 +133,23 @@ func (res *Response) GetBody() []byte {
 
 func (res *Response) String() string {
 	return string(res.GetRaw())
+}
+
+func (res *Response) RemoveHeader(name string, content string) string {
+	if (name == "Date" || name == "Content-Length") {
+		return ""
+	}
+	if (res.headers[name] == nil) {
+		res.headers[name] = []string {content}
+	} else {
+		for i := 0;i < len(res.headers[name]);i++ {
+			if (res.headers[name][i] == content) {
+				res.headers[name] = append(res.headers[name][:i], res.headers[name][(i+1):]...)
+				return ""
+			}
+		}
+	}
+	return ""
 }
 
 func NewResponse(req *Request) *Response {
