@@ -23,13 +23,15 @@ func (r *Router) MatchRoutes (c gnet.Conn) gnet.Action {
         go fmt.Println("[" + time.Now().Format("2006-01-02 15:03:04") + "] " + err)
 		return gnet.Close
 	}
-    res := NewResponse(req)
+    res := NewResponse(req, c)
     for rule, function := range r.Routes {
         match, dict := r.MatchRoute(req.Uri, rule)
         if match {
             req.Param = dict
             function(req, res)
-            c.Write(res.GetRaw())
+            if !res.Chunked {
+                c.Write(res.GetRaw())
+            }
             return gnet.None
         }
     }
