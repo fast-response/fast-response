@@ -16,6 +16,13 @@ func (r *Router) Add (rule string, function func(*Request, *Response)) {
     r.Routes[rule] = function
 }
 
+func (r *Router) To (uri string) func(*Request, *Response) {
+    return func(req *Request, res *Response) {
+	res.SetHeader("Location", uri)
+	res.SetCode(301)
+    }
+}
+
 func (r *Router) MatchRoutes (c gnet.Conn) gnet.Action {
     buf, _ := c.Next(-1)
     req, err := NewRequest(buf)
