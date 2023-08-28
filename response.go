@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"time"
 	"fmt"
+	"github.com/panjf2000/gnet/v2"
 )
 
 type Response struct {
@@ -13,6 +14,8 @@ type Response struct {
 	text string
 	version string
 	Req *Request
+	Chunked bool
+	Conn gnet.Conn
 }
 
 var Code = map[int]string { 
@@ -152,6 +155,26 @@ func (res *Response) RemoveHeader(name string, content string) string {
 	return ""
 }
 
-func NewResponse(req *Request) *Response {
-	return &Response{Code: "200 "+ Code[200], headers: map[string][]string{}, version: req.Version, Req: req}
+func (res *Response) PushBody(content []byte) {
+	if res.Chunked {
+		res.Conn.Write(BytesCombine2(String2Slice(strconv.FormatInt(int64(len(content)), 16) + "\r\n"), content, String2Slice("\r\n")))
+	} else {
+		res.headers["Date"] = []string{Time2HttpDate()}
+		headers := ""
+		for key, val := range res.headers { 
+			for _, content := range val {
+				headers += key + ": " + content + "\r\n"
+			}
+		}
+		res.Conn.Write(BytesCombine2(String2Slice(res.version + " " + res.Code + "\r\n" +headers + "Transfer-Encoding: chunked\r\n" + "\n" + strconv.FormatInt(int64(len(content)), 16) + "\r\n"), content, String2Slice("\r\n")))
+		res.Chunked = true
+	}
+}
+
+func (res *Response) PushBodyEnd() {
+	res.Conn.Write(String2Slice("0\r\n\r\n"))
+}
+
+func NewResponse(req *Request, Conn gnet.Conn) *Response {
+	return &Response{Code: "200 "+ Code[200], headers: map[string][]string{"server": []string{"FastResponse"}}, version: req.Version, Req: req, Chunked: false, Conn: Conn}
 }
