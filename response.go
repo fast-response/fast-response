@@ -97,7 +97,7 @@ func (res *Response) SetText(text string) {
 }
 
 func (res *Response) SetContentType(contentType string) {
-	res.headers["ContentType"] = []string{contentType}
+	res.headers["Content-Type"] = []string{contentType}
 }
 
 func (res *Response) SetCode(code int) {
