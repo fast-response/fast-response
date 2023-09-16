@@ -40,12 +40,20 @@ func (r *Router) MatchRoutes(c gnet.Conn) gnet.Action {
 			if !res.Chunked {
 				c.Write(res.GetRaw())
 			}
-			return gnet.None
+			if req.GetHeader("Connection")[0] == "keep-alive" {
+				return gnet.None
+			} else {
+				return gnet.Close
+			}
 		}
 	}
 	GetErrPage(req, res, Code[404], 404)
 	c.Write(res.GetRaw())
-	return gnet.None
+	if req.GetHeader("Connection")[0] == "keep-alive" {
+		return gnet.None
+	} else {
+		return gnet.Close
+	}
 }
 
 func (r *Router) MatchRoute(uri string, rule string) (bool, map[string]string) {
@@ -121,9 +129,8 @@ func (r *Router) MatchRoute(uri string, rule string) (bool, map[string]string) {
 			e += 1
 		}
 	}
-	if len(uriList) - 1  >= e {
+	if len(uriList)-1 >= e {
 		return false, result
 	}
-	fmt.Println(e)
 	return true, result
 }
