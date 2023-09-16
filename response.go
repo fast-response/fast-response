@@ -1,24 +1,25 @@
 package fastresponse
 
 import (
+	"fmt"
 	"strconv"
 	"time"
-	"fmt"
+
 	"github.com/panjf2000/gnet/v2"
 )
 
 type Response struct {
-	Code string
+	Code    string
 	headers map[string][]string
-	body []byte
-	text string
+	body    []byte
+	text    string
 	version string
-	Req *Request
+	Req     *Request
 	Chunked bool
-	Conn gnet.Conn
+	Conn    gnet.Conn
 }
 
-var Code = map[int]string { 
+var Code = map[int]string{
 	100: "Continue",
 	101: "Switching Protocols",
 	200: "OK",
@@ -63,22 +64,15 @@ var Code = map[int]string {
 }
 
 func Time2HttpDate() string {
-	t := time.Now()
-	weekday := ""
-	if (t.Weekday().String() == "Tuesday") || (t.Weekday().String() == "Thursday") { 
-		weekday = t.Weekday().String()[0:4]
-	} else {
-		weekday = t.Weekday().String()[0:3]
-	}
-	return  weekday + t.Format(", 2 Jan 2006 15:04:05 GMT")
+	return time.Now().In(time.LoadLocation("Europe/London")).Format(time.RFC1123)
 }
 
 func (res *Response) SetHeader(name string, content string) string {
-	if (name == "Date" || name == "Content-Length") {
+	if name == "Date" || name == "Content-Length" {
 		return ""
 	}
-	if (res.headers[name] == nil) {
-		res.headers[name] = []string {content}
+	if res.headers[name] == nil {
+		res.headers[name] = []string{content}
 	} else {
 		res.headers[name] = append(res.headers[name], content)
 	}
@@ -112,7 +106,7 @@ func (res *Response) GetHeaders() map[string][]string {
 }
 
 func (res *Response) GetHeader(name string) []string {
-	if (res.headers[name] == nil) {
+	if res.headers[name] == nil {
 		return []string{}
 	} else {
 		return res.headers[name]
@@ -120,14 +114,14 @@ func (res *Response) GetHeader(name string) []string {
 }
 
 func (res *Response) GetRaw() []byte {
-		headers := ""
-		for key, val := range res.headers { 
-			for _, content := range val {
-				headers += key + ": " + content + "\r\n"
-			}
+	headers := ""
+	for key, val := range res.headers {
+		for _, content := range val {
+			headers += key + ": " + content + "\r\n"
 		}
-		go fmt.Println("[" + time.Now().Format("2006-01-02 15:03:04") + "|" + res.Req.Uri + "] " + res.Code + " | Body Length: " + strconv.Itoa(len(res.body)))
-		return BytesCombine2(String2Slice(res.version + " " + res.Code + "\r\n" +headers + "\n"), res.body)
+	}
+	go fmt.Println("[" + time.Now().Format("2006-01-02 15:03:04") + "|" + res.Req.Uri + "] " + res.Code + " | Body Length: " + strconv.Itoa(len(res.body)))
+	return BytesCombine2(String2Slice(res.version+" "+res.Code+"\r\n"+headers+"\n"), res.body)
 }
 
 func (res *Response) GetBody() []byte {
@@ -139,14 +133,14 @@ func (res *Response) String() string {
 }
 
 func (res *Response) RemoveHeader(name string, content string) string {
-	if (name == "Date" || name == "Content-Length") {
+	if name == "Date" || name == "Content-Length" {
 		return ""
 	}
-	if (res.headers[name] == nil) {
-		res.headers[name] = []string {content}
+	if res.headers[name] == nil {
+		res.headers[name] = []string{content}
 	} else {
-		for i := 0;i < len(res.headers[name]);i++ {
-			if (res.headers[name][i] == content) {
+		for i := 0; i < len(res.headers[name]); i++ {
+			if res.headers[name][i] == content {
 				res.headers[name] = append(res.headers[name][:i], res.headers[name][(i+1):]...)
 				return ""
 			}
@@ -157,24 +151,26 @@ func (res *Response) RemoveHeader(name string, content string) string {
 
 func (res *Response) PushBody(content []byte) {
 	if res.Chunked {
-		res.Conn.Write(BytesCombine2(String2Slice(strconv.FormatInt(int64(len(content)), 16) + "\r\n"), content, String2Slice("\r\n")))
+		res.Conn.Write(BytesCombine2(String2Slice(strconv.FormatInt(int64(len(content)), 16)+"\r\n"), content, String2Slice("\r\n")))
 	} else {
 		res.headers["Date"] = []string{Time2HttpDate()}
 		headers := ""
-		for key, val := range res.headers { 
+		for key, val := range res.headers {
 			for _, content := range val {
 				headers += key + ": " + content + "\r\n"
 			}
 		}
-		res.Conn.Write(BytesCombine2(String2Slice(res.version + " " + res.Code + "\r\n" +headers + "Transfer-Encoding: chunked\r\n" + "\n" + strconv.FormatInt(int64(len(content)), 16) + "\r\n"), content, String2Slice("\r\n")))
+		res.Conn.Write(BytesCombine2(String2Slice(res.version+" "+res.Code+"\r\n"+headers+"Transfer-Encoding: chunked\r\n"+"\n"+strconv.FormatInt(int64(len(content)), 16)+"\r\n"), content, String2Slice("\r\n")))
 		res.Chunked = true
 	}
 }
 
 func (res *Response) PushBodyEnd() {
-	res.Conn.Write(String2Slice("0\r\n\r\n"))
+	if res.Chunked {
+		res.Conn.Write(String2Slice("0\r\n\r\n"))
+	}
 }
 
 func NewResponse(req *Request, Conn gnet.Conn) *Response {
-	return &Response{Code: "200 "+ Code[200], headers: map[string][]string{"server": []string{"FastResponse"}}, version: req.Version, Req: req, Chunked: false, Conn: Conn}
+	return &Response{Code: "200 " + Code[200], headers: map[string][]string{"Server": []string{"FastResponse"}}, version: req.Version, Req: req, Chunked: false, Conn: Conn}
 }
