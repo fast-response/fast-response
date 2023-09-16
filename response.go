@@ -64,7 +64,8 @@ var Code = map[int]string{
 }
 
 func Time2HttpDate() string {
-	return time.Now().In(time.LoadLocation("Europe/London")).Format(time.RFC1123)
+	l, _ := time.LoadLocation("Europe/London")
+	return time.Now().In(l).Format(time.RFC1123)
 }
 
 func (res *Response) SetHeader(name string, content string) string {
