@@ -65,7 +65,7 @@ var Code = map[int]string{
 
 func Time2HttpDate() string {
 	l, _ := time.LoadLocation("Europe/London")
-	return time.Now().In(l).Format(time.RFC1123)
+	return time.Now().In(l).Format("Mon, 02 Jan 2006 15:04:05") + " GMT"
 }
 
 func (res *Response) SetHeader(name string, content string) string {
@@ -122,7 +122,7 @@ func (res *Response) GetRaw() []byte {
 		}
 	}
 	go fmt.Println("[" + time.Now().Format("2006-01-02 15:03:04") + "|" + res.Req.Uri + "] " + res.Code + " | Body Length: " + strconv.Itoa(len(res.body)))
-	return BytesCombine2(String2Slice(res.version+" "+res.Code+"\r\n"+headers+"\n"), res.body)
+	return BytesCombine2(String2Slice(res.version+" "+res.Code+"\r\n"+headers+"\r\n"), res.body)
 }
 
 func (res *Response) GetBody() []byte {
@@ -161,7 +161,7 @@ func (res *Response) PushBody(content []byte) {
 				headers += key + ": " + content + "\r\n"
 			}
 		}
-		res.Conn.Write(BytesCombine2(String2Slice(res.version+" "+res.Code+"\r\n"+headers+"Transfer-Encoding: chunked\r\n"+"\n"+strconv.FormatInt(int64(len(content)), 16)+"\r\n"), content, String2Slice("\r\n")))
+		res.Conn.Write(BytesCombine2(String2Slice(res.version+" "+res.Code+"\r\n"+headers+"Transfer-Encoding: chunked\r\n"+"\r\n"+strconv.FormatInt(int64(len(content)), 16)+"\r\n"), content, String2Slice("\r\n")))
 		res.Chunked = true
 	}
 }
