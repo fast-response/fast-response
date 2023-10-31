@@ -8,16 +8,35 @@ import (
 )
 
 type Cookie struct {
-	Value       string
-	Name        string
-	Path        string
-	maxAge      int64
-	expires     string
-	Domain      string
-	HttpOnly    bool
-	Secure      bool
+	// Represents the value of the cookie.
+	Value string
+	
+	// Represents the name of the cookie.
+	Name string
+	
+	// Represents the path of the cookie.
+	Path string
+	
+	// Represents the maximum age of the cookie in seconds.
+	maxAge int64
+	
+	// Represents the expiration date of the cookie in the format "2006-01-02".
+	expires string
+	
+	// Represents the domain of the cookie.
+	Domain string
+	
+	// A boolean value indicating whether the cookie can only be accessed via HTTP and cannot be accessed by client-side scripts (e.g., JavaScript).
+	HttpOnly bool
+	
+	// A boolean value indicating whether the cookie can only be accessed via HTTPS and cannot be accessed by HTTP.
+	Secure bool
+	
+	// A boolean value indicating whether the maximum age functionality is enabled for the cookie. If enabled, it is true; otherwise, it is false.
 	MaxAgeEnble bool
-	readOnly    bool
+	
+	// A boolean value indicating whether the cookie can only be read and cannot be modified or deleted. If enabled, it is true; otherwise, it is false.
+	readOnly bool
 }
 
 func ParseCookies(req *Request) {
