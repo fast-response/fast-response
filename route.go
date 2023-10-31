@@ -93,7 +93,7 @@ func (r *Router) MatchRoute(uri string, rule string) (bool, map[string]string) {
 						if paramName[1] == "" {
 							if SliceByte2String(ruleList[b+1][0]) != "{" && SliceByte2String(ruleList[b+1][len(ruleList[b+1])-1]) != "}" {
 								n := e
-								for true {
+								for {
 									if (len(uriList) - n) <= 0 {
 										return false, result
 									}

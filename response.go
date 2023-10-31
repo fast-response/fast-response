@@ -14,6 +14,7 @@ type Response struct {
 	body    []byte
 	text    string
 	version string
+	Cookies map[string]*Cookie
 	Req     *Request
 	Chunked bool
 	Conn    gnet.Conn
@@ -82,8 +83,6 @@ func (res *Response) SetHeader(name string, content string) string {
 
 func (res *Response) SetBody(body []byte) {
 	res.body = body
-	res.headers["Content-Length"] = []string{strconv.Itoa(len(body))}
-	res.headers["Date"] = []string{Time2HttpDate()}
 }
 
 func (res *Response) SetText(text string) {
@@ -115,6 +114,9 @@ func (res *Response) GetHeader(name string) []string {
 }
 
 func (res *Response) GetRaw() []byte {
+	res.headers["Content-Length"] = []string{strconv.Itoa(len(res.body))}
+	res.headers["Date"] = []string{Time2HttpDate()}
+	GenerateCookies(res)
 	headers := ""
 	for key, val := range res.headers {
 		for _, content := range val {
@@ -173,5 +175,5 @@ func (res *Response) PushBodyEnd() {
 }
 
 func NewResponse(req *Request, Conn gnet.Conn) *Response {
-	return &Response{Code: "200 " + Code[200], headers: map[string][]string{"Server": []string{"FastResponse"}}, version: req.Version, Req: req, Chunked: false, Conn: Conn}
+	return &Response{Code: "200 " + Code[200], headers: map[string][]string{"Server": {"FastResponse"}}, version: req.Version, Req: req, Chunked: false, Conn: Conn}
 }

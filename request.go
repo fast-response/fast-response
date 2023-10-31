@@ -15,6 +15,7 @@ type Request struct {
 	Version string
 	Addr    string
 	Param   map[string]string
+	Cookies map[string]*Cookie
 }
 
 func (req *Request) GetHeader(name string) []string {
@@ -55,13 +56,13 @@ func NewRequest(ReqText []byte) (*Request, string) {
 		if resTextLength < 2 {
 			return req, "Unable to parse message"
 		}
-		headers, body = strings.Split(SliceBytes2String(resText[0]), "\r\n"), bytes.Join(resText[1:], String2Slice("\r\n"))
+		headers, _ = strings.Split(SliceBytes2String(resText[0]), "\r\n"), bytes.Join(resText[1:], String2Slice("\r\n"))
 	}
 	tmp := strings.Split(headers[0], " ")
 	if len(tmp) != 3 {
 		return req, "Unable to parse message"
 	}
-	if ContainsInSlice([]string{"HTTP/1.0", "HTTP/0.9", "HTTP/1.1", "HTTP/1.2"}, tmp[2]) == false {
+	if !ContainsInSlice([]string{"HTTP/1.0", "HTTP/0.9", "HTTP/1.1", "HTTP/1.2"}, tmp[2]) {
 		return req, "Unsupported protocol"
 	}
 	req.Method, req.Uri, req.Version = tmp[0], tmp[1], tmp[2]
@@ -77,5 +78,7 @@ func NewRequest(ReqText []byte) (*Request, string) {
 			req.Headers[tmp[0]] = append(req.Headers[tmp[0]], strings.TrimSpace(strings.Join(tmp[1:], ":")))
 		}
 	}
+	req.Cookies = map[string]*Cookie{}
+	ParseCookies(req)
 	return req, ""
 }
