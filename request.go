@@ -6,16 +6,35 @@ import (
 )
 
 type Request struct {
-	Uri     string
-	Headers map[string][]string
-	Body    []byte
-	Path    string
-	Method  string
-	Raw     []byte
-	Version string
-	Addr    string
-	Param   map[string]string
-	Cookies map[string]*Cookie
+    // URI of the request
+    Uri string
+
+    // Headers contains the headers
+    Headers map[string][]string
+
+    // Body contains the body of the request
+    Body []byte
+
+    // Path contains the parsed path of the request
+    Path string
+
+    // Method contains the HTTP method of the request
+    Method string
+
+    // Raw contains the raw bytes of the request
+    Raw []byte
+
+    // Version of the HTTP protocol used in the request
+    Version string
+
+    // Address of the remote peer of the request
+    Addr string
+
+    // Params contains the parsed parameters of the request
+    Param map[string]string
+
+    // Cookies contains the parsed cookies of the request
+    Cookies map[string]*Cookie
 }
 
 func (req *Request) GetHeader(name string) []string {
