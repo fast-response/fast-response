@@ -3,38 +3,42 @@ package fastresponse
 import (
 	"bytes"
 	"strings"
+
+	"github.com/panjf2000/gnet/v2"
 )
 
 type Request struct {
-    // URI of the request
-    Uri string
+	// URI of the request
+	Uri string
 
-    // Headers contains the headers
-    Headers map[string][]string
+	// Headers contains the headers
+	Headers map[string][]string
 
-    // Body contains the body of the request
-    Body []byte
+	// Body contains the body of the request
+	Body []byte
 
-    // Path contains the parsed path of the request
-    Path string
+	// Path contains the parsed path of the request
+	Path string
 
-    // Method contains the HTTP method of the request
-    Method string
+	// Method contains the HTTP method of the request
+	Method string
 
-    // Raw contains the raw bytes of the request
-    Raw []byte
+	// Raw contains the raw bytes of the request
+	Raw []byte
 
-    // Version of the HTTP protocol used in the request
-    Version string
+	// Version of the HTTP protocol used in the request
+	Version string
 
-    // Address of the remote peer of the request
-    Addr string
+	// Address of the remote peer of the request
+	Addr string
 
-    // Params contains the parsed parameters of the request
-    Param map[string]string
+	// Params contains the parsed parameters of the request
+	Param map[string]string
 
-    // Cookies contains the parsed cookies of the request
-    Cookies map[string]*Cookie
+	// Cookies contains the parsed cookies of the request
+	Cookies map[string]*Cookie
+
+	FormData map[string]*FormData
 }
 
 func (req *Request) GetHeader(name string) []string {
@@ -77,6 +81,7 @@ func NewRequest(ReqText []byte) (*Request, string) {
 		}
 		headers, _ = strings.Split(SliceBytes2String(resText[0]), "\r\n"), bytes.Join(resText[1:], String2Slice("\r\n"))
 	}
+	headersLength = len(headers)
 	tmp := strings.Split(headers[0], " ")
 	if len(tmp) != 3 {
 		return req, "Unable to parse message"
@@ -100,4 +105,18 @@ func NewRequest(ReqText []byte) (*Request, string) {
 	req.Cookies = map[string]*Cookie{}
 	ParseCookies(req)
 	return req, ""
+}
+
+func (req *Request) AddToConnectionQueue(Remote string, res *Response, function func(*Request, *Response), c gnet.Conn) bool {
+	if len(req.GetHeader("Content-Type")) != 0 && req.GetHeader("Content-Type")[0][:20] == "multipart/form-data;" {
+		ls := strings.Split(req.GetHeader("Content-Type")[0], ";")
+		lsLength := len(ls)
+		for i := 0; i < lsLength; i++ {
+			if strings.Trim(strings.Split(ls[i], "=")[0], "\r\n ") == "boundary" {
+				AddToConnectionQueue(Remote, strings.Trim(strings.Split(ls[i], "=")[1], "\r\n \""), req, res, function, c)
+				return true
+			}
+		}
+	}
+	return false
 }

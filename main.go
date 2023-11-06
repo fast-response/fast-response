@@ -17,13 +17,13 @@ type App struct {
 
 type Config struct {
 	// Listening port, Default is 8080
-	Port      int
+	Port int
 
 	// The host address being monitored will be monitored by default, including IPv6
-	Host      string
+	Host string
 
 	// The log level is currently invalid, but it is currently under development
-	LogLevel  string
+	LogLevel string
 
 	// Multi core switch, which can increase speed for multi core devices
 	Multicore bool
@@ -40,6 +40,15 @@ type httpServer struct {
 
 func (hs *httpServer) OnTraffic(c gnet.Conn) gnet.Action {
 	return hs.App.Router.MatchRoutes(c)
+}
+
+func (hs *httpServer) OnClose(c gnet.Conn, err error) gnet.Action {
+	ConnectionQueue[c.RemoteAddr().String()] = nil
+	return gnet.Close
+}
+
+func (hs *httpServer) OnShutdown(eng gnet.Engine) {
+	ConnectionQueue = map[string]*Connection{}
 }
 
 func NewApp(c *Config) *App {
