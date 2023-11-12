@@ -108,7 +108,7 @@ func NewRequest(ReqText []byte) (*Request, string) {
 }
 
 func (req *Request) AddToConnectionQueue(Remote string, res *Response, function func(*Request, *Response), c gnet.Conn) bool {
-	if len(req.GetHeader("Content-Type")) != 0 && req.GetHeader("Content-Type")[0][:20] == "multipart/form-data;" {
+	if len(req.GetHeader("Content-Type")) != 0 && len(req.GetHeader("Content-Type")[0]) > 20 && req.GetHeader("Content-Type")[0][:20] == "multipart/form-data;" {
 		ls := strings.Split(req.GetHeader("Content-Type")[0], ";")
 		lsLength := len(ls)
 		for i := 0; i < lsLength; i++ {
