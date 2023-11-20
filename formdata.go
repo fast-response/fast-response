@@ -16,45 +16,56 @@ type FormData struct {
 	Headers map[string][]string
 }
 
-func AddToConnectionQueue(Remote string, BoundaryName string, req *Request, res *Response, function func(*Request, *Response), c gnet.Conn) {
-	ConnectionQueue[Remote] = &Connection{
+func AddToConnectionQueue(app *App, Remote string, BoundaryName string, req *Request, res *Response, function func(*Request, *Response), c gnet.Conn) {
+	app.ConnectionQueueLock.Lock()
+	app.ConnectionQueue[Remote] = &Connection{
 		BoundaryName: BoundaryName,
 		req:          req,
 		res:          res,
 		function:     function,
 	}
+	app.ConnectionQueueLock.Unlock()
 	if len(req.Headers["expcet"]) >= 1 && req.Headers["expcet"][0] == "100-continue" {
 		c.Write(String2Slice("HTTP/1.1 100 Continue\r\n\r\n"))
 	}
-	AddFormData(Remote, req.Body, c)
+	AddFormData(app, Remote, req.Body, c)
 }
 
-func AddFormData(Remote string, buf []byte, c gnet.Conn) gnet.Action {
-	if ConnectionQueue[Remote] != nil {
-		Formdata := bytes.Split(buf, String2Slice("--"+ConnectionQueue[Remote].BoundaryName))
+func AddFormData(app *App, Remote string, buf []byte, c gnet.Conn) gnet.Action {
+	app.ConnectionQueueLock.RLock()
+	if app.ConnectionQueue[Remote] != nil {
+		app.ConnectionQueue[Remote].Lock.Lock()
+		Formdata := bytes.Split(buf, String2Slice("--"+app.ConnectionQueue[Remote].BoundaryName))
 		FormdataLength := len(Formdata)
 		if FormdataLength < 1 {
+			app.ConnectionQueueLock.RUnlock()
+			app.ConnectionQueue[Remote].Lock.Unlock()
 			return gnet.Shutdown
 		}
 		if FormdataLength == 1 {
-			if ConnectionQueue[Remote].FormData[ConnectionQueue[Remote].LastFormDataName] != nil && ConnectionQueue[Remote].FormData[ConnectionQueue[Remote].LastFormDataName].Value != nil {
-				ConnectionQueue[Remote].FormData[ConnectionQueue[Remote].LastFormDataName].Value.Write(Formdata[0])
+			if app.ConnectionQueue[Remote].FormData[app.ConnectionQueue[Remote].LastFormDataName] != nil && app.ConnectionQueue[Remote].FormData[app.ConnectionQueue[Remote].LastFormDataName].Value != nil {
+
+				app.ConnectionQueue[Remote].FormData[app.ConnectionQueue[Remote].LastFormDataName].Value.Write(Formdata[0])
 			}
+			app.ConnectionQueueLock.RUnlock()
+			app.ConnectionQueue[Remote].Lock.Unlock()
 			return gnet.None
 		}
 		if SliceBytes2String(Formdata[0]) != "" {
-			if ConnectionQueue[Remote].FormData[ConnectionQueue[Remote].LastFormDataName] != nil && ConnectionQueue[Remote].FormData[ConnectionQueue[Remote].LastFormDataName].Value != nil {
-				ConnectionQueue[Remote].FormData[ConnectionQueue[Remote].LastFormDataName].Value.Write(Formdata[0])
+			if app.ConnectionQueue[Remote].FormData[app.ConnectionQueue[Remote].LastFormDataName] != nil && app.ConnectionQueue[Remote].FormData[app.ConnectionQueue[Remote].LastFormDataName].Value != nil {
+				app.ConnectionQueue[Remote].FormData[app.ConnectionQueue[Remote].LastFormDataName].Value.Write(Formdata[0])
 			}
 		}
 		for i := 1; i < FormdataLength; i++ {
 			if strings.Trim(SliceBytes2String(Formdata[i]), " \r\n") == "--" {
-				ConnectionQueue[Remote].req.FormData = ConnectionQueue[Remote].FormData
-				go fmt.Println("[" + time.Now().Format("2006-01-02 15:03:04") + "|" + ConnectionQueue[Remote].res.Req.Uri + "] Form data has been parsed.")
-				ConnectionQueue[Remote].function(ConnectionQueue[Remote].req, ConnectionQueue[Remote].res)
-				if !ConnectionQueue[Remote].res.Chunked {
-					c.Write(ConnectionQueue[Remote].res.GetRaw())
+				app.ConnectionQueue[Remote].req.FormData = app.ConnectionQueue[Remote].FormData
+				go fmt.Println("[" + time.Now().Format("2006-01-02 15:03:04") + "|" + app.ConnectionQueue[Remote].res.Req.Path + "] Form data has been parsed.")
+				app.ConnectionQueue[Remote].function(app.ConnectionQueue[Remote].req, app.ConnectionQueue[Remote].res)
+				if !app.ConnectionQueue[Remote].res.Chunked {
+					c.Write(app.ConnectionQueue[Remote].res.GetRaw())
 				}
+				app.ConnectionQueueLock.RUnlock()
+				app.ConnectionQueue[Remote].Lock.Unlock()
 				return gnet.None
 			}
 			headerText, body := SliceBytes2String(bytes.Split(Formdata[i], String2Slice("\r\n\r\n"))[0]), bytes.Join(bytes.Split(Formdata[i], String2Slice("\r\n\r\n"))[1:], String2Slice("\r\n\r\n"))
@@ -89,18 +100,21 @@ func AddFormData(Remote string, buf []byte, c gnet.Conn) gnet.Action {
 			if name == "" {
 				continue
 			}
-			if ConnectionQueue[Remote].FormData == nil {
-				ConnectionQueue[Remote].FormData = map[string]*FormData{}
+			if app.ConnectionQueue[Remote].FormData == nil {
+				app.ConnectionQueue[Remote].FormData = map[string]*FormData{}
 			}
-			ConnectionQueue[Remote].FormData[name] = &FormData{
+			app.ConnectionQueue[Remote].FormData[name] = &FormData{
 				Name:    name,
 				Value:   bytes.NewBuffer(body),
 				Type:    Type,
 				Headers: Headers,
 			}
-			ConnectionQueue[Remote].LastFormDataName = name
+			app.ConnectionQueue[Remote].LastFormDataName = name
 		}
+		app.ConnectionQueueLock.RUnlock()
+		app.ConnectionQueue[Remote].Lock.Unlock()
 		return gnet.None
 	}
+	app.ConnectionQueueLock.RUnlock()
 	return gnet.Shutdown
 }

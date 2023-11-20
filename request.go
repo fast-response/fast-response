@@ -2,6 +2,7 @@ package fastresponse
 
 import (
 	"bytes"
+	"net/url"
 	"strings"
 
 	"github.com/panjf2000/gnet/v2"
@@ -9,7 +10,7 @@ import (
 
 type Request struct {
 	// URI of the request
-	Uri string
+	Uri *url.URL
 
 	// Headers contains the headers
 	Headers map[string][]string
@@ -49,7 +50,7 @@ func (req *Request) GetHeader(name string) []string {
 	}
 }
 
-func NewRequest(ReqText []byte) (*Request, string) {
+func NewRequest(ReqText []byte, app *App) (*Request, string) {
 	req := &Request{Raw: ReqText}
 	resText := bytes.Split(ReqText, String2Slice("\r\n"))
 	resTextLength := len(resText)
@@ -89,7 +90,6 @@ func NewRequest(ReqText []byte) (*Request, string) {
 	if !ContainsInSlice([]string{"HTTP/1.0", "HTTP/0.9", "HTTP/1.1", "HTTP/1.2"}, tmp[2]) {
 		return req, "Unsupported protocol"
 	}
-	req.Method, req.Uri, req.Version = tmp[0], tmp[1], tmp[2]
 	req.Headers = map[string][]string{}
 	for i := 1; i < headersLength; i++ {
 		tmp := strings.Split(headers[i], ":")
@@ -103,17 +103,51 @@ func NewRequest(ReqText []byte) (*Request, string) {
 		}
 	}
 	req.Cookies = map[string]*Cookie{}
+	if len(req.GetHeader("Host")) != 0 || req.GetHeader("Host")[0] != "" {
+		Url := ""
+		if app.Config.ProxyMode {
+			Url = "http://" + tmp[1]
+		} else {
+			Url = "http://" + req.GetHeader("Host")[0] + tmp[1]
+		}
+		URL, err := url.Parse(Url)
+		if err != nil {
+			return req, "Unable to parse URL"
+		}
+		req.Uri = URL
+		req.Path = URL.Path
+		if app.Config.ProxyMode {
+			req.Path = URL.Host
+		}
+	} else {
+		Url := ""
+		if app.Config.ProxyMode {
+			Url = "http://" + tmp[1]
+		} else {
+			Url = "http://Unkown" + tmp[1]
+		}
+		URL, err := url.Parse(Url)
+		if err != nil {
+			return req, "Unable to parse URL"
+		}
+		req.Uri = URL
+		req.Path = URL.Path
+		if app.Config.ProxyMode {
+			req.Path = URL.Host
+		}
+	}
+	req.Method, req.Version = tmp[0], tmp[2]
 	ParseCookies(req)
 	return req, ""
 }
 
-func (req *Request) AddToConnectionQueue(Remote string, res *Response, function func(*Request, *Response), c gnet.Conn) bool {
+func (req *Request) AddToConnectionQueue(app *App, Remote string, res *Response, function func(*Request, *Response), c gnet.Conn) bool {
 	if len(req.GetHeader("Content-Type")) != 0 && len(req.GetHeader("Content-Type")[0]) > 20 && req.GetHeader("Content-Type")[0][:20] == "multipart/form-data;" {
 		ls := strings.Split(req.GetHeader("Content-Type")[0], ";")
 		lsLength := len(ls)
 		for i := 0; i < lsLength; i++ {
 			if strings.Trim(strings.Split(ls[i], "=")[0], "\r\n ") == "boundary" {
-				AddToConnectionQueue(Remote, strings.Trim(strings.Split(ls[i], "=")[1], "\r\n \""), req, res, function, c)
+				AddToConnectionQueue(app, Remote, strings.Trim(strings.Split(ls[i], "=")[1], "\r\n \""), req, res, function, c)
 				return true
 			}
 		}

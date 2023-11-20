@@ -13,17 +13,6 @@ type Router struct {
 	Routes map[string]func(*Request, *Response)
 }
 
-type Connection struct {
-	BoundaryName     string
-	LastFormDataName string
-	FormData         map[string]*FormData
-	res              *Response
-	req              *Request
-	function         func(*Request, *Response)
-}
-
-var ConnectionQueue = map[string]*Connection{}
-
 func (r *Router) Add(rule string, function func(*Request, *Response)) {
 	r.Routes[rule] = function
 }
@@ -35,29 +24,43 @@ func (r *Router) To(uri string) func(*Request, *Response) {
 	}
 }
 
-func (r *Router) MatchRoutes(c gnet.Conn) gnet.Action {
+func (r *Router) MatchRoutes(app *App, c gnet.Conn) gnet.Action {
 	buf, _ := c.Next(-1)
-	ok := AddFormData(c.RemoteAddr().String(), buf, c)
+	ok := AddFormData(app, c.RemoteAddr().String(), buf, c)
 	if ok == gnet.None {
 		return gnet.None
 	}
-	req, err := NewRequest(buf)
+	req, err := NewRequest(buf, app)
 	if err != "" {
 		go fmt.Println("[" + time.Now().Format("2006-01-02 15:03:04") + "] " + err)
 		return gnet.Close
 	}
 	res := NewResponse(req, c)
 	for rule, function := range r.Routes {
-		match, dict := r.MatchRoute(req.Uri, rule)
-		if match {
-			req.Param = dict
-			if !req.AddToConnectionQueue(c.RemoteAddr().String(), res, function, c) {
-				function(req, res)
-				if !res.Chunked {
-					c.Write(res.GetRaw())
+		if app.Config.ProxyMode {
+			if req.Path == rule {
+				req.Param = map[string]string{}
+				if !req.AddToConnectionQueue(app, c.RemoteAddr().String(), res, function, c) {
+					function(req, res)
+					if !res.Chunked {
+						c.Write(res.GetRaw())
+					}
 				}
+				return gnet.None
+
 			}
-			return gnet.None
+		} else {
+			match, dict := r.MatchRoute(req.Path, rule)
+			if match {
+				req.Param = dict
+				if !req.AddToConnectionQueue(app, c.RemoteAddr().String(), res, function, c) {
+					function(req, res)
+					if !res.Chunked {
+						c.Write(res.GetRaw())
+					}
+				}
+				return gnet.None
+			}
 		}
 	}
 	GetErrPage(req, res, Code[404], 404)

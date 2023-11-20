@@ -141,7 +141,7 @@ func (res *Response) GetRaw() []byte {
 			headers += key + ": " + content + "\r\n"
 		}
 	}
-	go fmt.Println("[" + time.Now().Format("2006-01-02 15:03:04") + "|" + res.Req.Uri + "] " + res.Code + " | Body Length: " + strconv.Itoa(len(res.body)))
+	go fmt.Println("[" + time.Now().Format("2006-01-02 15:03:04") + "|" + res.Req.Path + "] " + res.Code + " | Body Length: " + strconv.Itoa(len(res.body)))
 	return BytesCombine2(String2Slice(res.version+" "+res.Code+"\r\n"+headers+"\r\n"), res.body)
 }
 
