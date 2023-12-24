@@ -2,7 +2,6 @@ package fastresponse
 
 import (
 	"bytes"
-	"fmt"
 	"net/url"
 	"strings"
 
@@ -84,7 +83,6 @@ func NewRequest(ReqText []byte, app *App) (*Request, string) {
 			break
 		}
 	}
-	fmt.Println(resText, req.Body)
 	headersLength := len(headers)
 	if headersLength == 0 {
 		resText = bytes.Split(bytes.Join(resText, String2Slice("\r\n")), String2Slice("\r\n\r\n"))
