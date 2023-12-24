@@ -2,6 +2,7 @@ package fastresponse
 
 import (
 	"bytes"
+	"fmt"
 	"net/url"
 	"strings"
 
@@ -61,7 +62,16 @@ func NewRequest(ReqText []byte, app *App) (*Request, string) {
 	for key := 0; key < resTextLength; key++ {
 		val := resText[key]
 		if len(val) == 0 {
-			continue
+			if (key+1) < resTextLength {
+				header := resText[0 : key]
+				headerLength := len(header)
+				for e := 0; e < headerLength; e++ {
+					headers = append(headers, SliceBytes2String(header[e]))
+				}
+				body = bytes.Join(resText[key+1:], String2Slice("\r\n"))
+				req.Body = body
+				break
+			}
 		}
 		if val[0] == String2Slice("\n")[0] || val[0] == String2Slice("\r")[0] {
 			header := resText[0:key]
@@ -70,10 +80,11 @@ func NewRequest(ReqText []byte, app *App) (*Request, string) {
 				headers = append(headers, SliceBytes2String(header[e]))
 			}
 			body = bytes.Join(resText[key:], String2Slice("\r\n"))
-			req.Body = body[1:]
+			req.Body = body
 			break
 		}
 	}
+	fmt.Println(resText, req.Body)
 	headersLength := len(headers)
 	if headersLength == 0 {
 		resText = bytes.Split(bytes.Join(resText, String2Slice("\r\n")), String2Slice("\r\n\r\n"))
