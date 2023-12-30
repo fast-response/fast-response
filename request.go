@@ -112,7 +112,7 @@ func NewRequest(ReqText []byte, app *App) (*Request, string) {
 		}
 	}
 	req.Cookies = map[string]*Cookie{}
-	if len(req.GetHeader("Host")) != 0 || req.GetHeader("Host")[0] != "" {
+	if len(req.GetHeader("Host")) > 0 && req.GetHeader("Host")[0] != "" {
 		Url := ""
 		if app.Config.ProxyMode {
 			Url = "http://" + tmp[1]
