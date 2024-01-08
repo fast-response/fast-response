@@ -2,9 +2,11 @@ package fastresponse
 
 import (
 	"bytes"
+	"errors"
 	"net/url"
 	"strings"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/panjf2000/gnet/v2"
 )
 
@@ -42,14 +44,6 @@ type Request struct {
 	FormData map[string]*FormData
 }
 
-func (req *Request) GetHeader(name string) []string {
-	if req.Headers[name] == nil {
-		return []string{}
-	} else {
-		return req.Headers[name]
-	}
-}
-
 func NewRequest(ReqText []byte, app *App) (*Request, string) {
 	req := &Request{Raw: ReqText}
 	resText := bytes.Split(ReqText, String2Slice("\r\n"))
@@ -61,11 +55,11 @@ func NewRequest(ReqText []byte, app *App) (*Request, string) {
 	for key := 0; key < resTextLength; key++ {
 		val := resText[key]
 		if len(val) == 0 {
-			if (key+1) < resTextLength {
-				header := resText[0 : key]
+			if (key + 1) < resTextLength {
+				header := resText[0:key]
 				headerLength := len(header)
 				for e := 0; e < headerLength; e++ {
-					headers = append(headers, SliceBytes2String(header[e]))
+					headers = append(headers, Bytes2String(header[e]))
 				}
 				body = bytes.Join(resText[key+1:], String2Slice("\r\n"))
 				req.Body = body
@@ -76,7 +70,7 @@ func NewRequest(ReqText []byte, app *App) (*Request, string) {
 			header := resText[0:key]
 			headerLength := len(header)
 			for e := 0; e < headerLength; e++ {
-				headers = append(headers, SliceBytes2String(header[e]))
+				headers = append(headers, Bytes2String(header[e]))
 			}
 			body = bytes.Join(resText[key:], String2Slice("\r\n"))
 			req.Body = body
@@ -89,7 +83,7 @@ func NewRequest(ReqText []byte, app *App) (*Request, string) {
 		if resTextLength < 2 {
 			return req, "Unable to parse message"
 		}
-		headers, _ = strings.Split(SliceBytes2String(resText[0]), "\r\n"), bytes.Join(resText[1:], String2Slice("\r\n"))
+		headers, _ = strings.Split(Bytes2String(resText[0]), "\r\n"), bytes.Join(resText[1:], String2Slice("\r\n"))
 	}
 	headersLength = len(headers)
 	tmp := strings.Split(headers[0], " ")
@@ -150,6 +144,14 @@ func NewRequest(ReqText []byte, app *App) (*Request, string) {
 	return req, ""
 }
 
+func (req *Request) GetHeader(name string) []string {
+	if req.Headers[name] == nil {
+		return []string{}
+	} else {
+		return req.Headers[name]
+	}
+}
+
 func (req *Request) AddToConnectionQueue(app *App, Remote string, res *Response, function func(*Request, *Response), c gnet.Conn) bool {
 	if len(req.GetHeader("Content-Type")) != 0 && len(req.GetHeader("Content-Type")[0]) > 20 && req.GetHeader("Content-Type")[0][:20] == "multipart/form-data;" {
 		ls := strings.Split(req.GetHeader("Content-Type")[0], ";")
@@ -162,4 +164,29 @@ func (req *Request) AddToConnectionQueue(app *App, Remote string, res *Response,
 		}
 	}
 	return false
+}
+
+func (req *Request) Text() string {
+	if req.Body == nil {
+		return ""
+	} else {
+		return Bytes2String(req.Body)
+	}
+}
+
+func (req *Request) Json(obj any) error {
+	if req.Method != "POST" {
+		return errors.New("invalid request method")
+	}
+	if len(req.Body) == 0 || req.Text()[0:0] == "{" || req.Text()[len(req.Text())-1:] != "}" {
+		return errors.New("invalid request body")
+	}
+	if req.Headers["Content-Type"] == nil && len(req.Headers["Content-Type"]) == 0 {
+		return errors.New("Content-Type header not found")
+	}
+	if req.Headers["Content-Type"][0][:16] != "application/json" {
+		return errors.New("Content-Type must be application/json")
+	}
+	err := jsoniter.Unmarshal(req.Body, obj)
+	return err
 }

@@ -2,6 +2,7 @@ package fastresponse
 
 import (
 	"fmt"
+	jsoniter "github.com/json-iterator/go"
 	"strconv"
 	"time"
 
@@ -9,33 +10,33 @@ import (
 )
 
 type Response struct {
-    // HTTP response code
-    Code string
+	// HTTP response code
+	Code string
 
-    // Headers contains the headers
-    headers map[string][]string
+	// Headers contains the headers
+	headers map[string][]string
 
-    // Body contains the body of the response
-    body []byte
+	// Body contains the body of the response
+	body []byte
 
-    // Text contains the human-readable text of the response
-    text string
+	// Text contains the human-readable text of the response
+	text string
 
-    // Version of the HTTP protocol used in the response
-    version string
+	// Version of the HTTP protocol used in the response
+	version string
 
-    // Cookies contains the parsed cookies of the response
-    Cookies map[string]*Cookie
+	// Cookies contains the parsed cookies of the response
+	Cookies map[string]*Cookie
 
-    // Request is the *Request that generated this Response.
-    // It can be used for getting request specific values.
-    Req *Request
+	// Request is the *Request that generated this Response.
+	// It can be used for getting request specific values.
+	Req *Request
 
-    // Chunked controls whether chunked transfer encoding should be applied.
-    Chunked bool
+	// Chunked controls whether chunked transfer encoding should be applied.
+	Chunked bool
 
-    // Connection of the response. This is the gnet.Conn object of the connection from the client. 
-    Conn gnet.Conn
+	// Connection of the response. This is the gnet.Conn object of the connection from the client.
+	Conn gnet.Conn
 }
 
 var Code = map[int]string{
@@ -190,6 +191,16 @@ func (res *Response) PushBodyEnd() {
 	if res.Chunked {
 		res.Conn.Write(String2Slice("0\r\n\r\n"))
 	}
+}
+
+func (res *Response) SetJson(data any) error {
+	res.SetHeader("Content-Type", "application/json; charset=utf-8")
+	result, err := jsoniter.Marshal(data)
+	if err == nil {
+		res.SetBody(result)
+		return nil
+	}
+	return err
 }
 
 func NewResponse(req *Request, Conn gnet.Conn) *Response {

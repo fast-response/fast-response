@@ -92,7 +92,7 @@ func (r *Router) MatchRoute(uri string, rule string) (bool, map[string]string) {
 			e += 1
 			continue
 		}
-		if SliceByte2String(i[0]) == "{" && SliceByte2String(i[len(i)-1]) == "}" {
+		if Byte2String(i[0]) == "{" && Byte2String(i[len(i)-1]) == "}" {
 			if strings.ContainsRune(i[1:len(i)-1], '*') {
 				paramName := strings.Split(i[1:len(i)-1], "*")
 				num, err := strconv.Atoi(paramName[1])
@@ -108,10 +108,10 @@ func (r *Router) MatchRoute(uri string, rule string) (bool, map[string]string) {
 							return false, result
 						}
 						result[paramName[0]] = strings.Join(uriList[e:], "/")
-						e += (len(uriList) - e)
+						e += len(uriList) - e
 					} else {
 						if paramName[1] == "" {
-							if SliceByte2String(ruleList[b+1][0]) != "{" && SliceByte2String(ruleList[b+1][len(ruleList[b+1])-1]) != "}" {
+							if Byte2String(ruleList[b+1][0]) != "{" && Byte2String(ruleList[b+1][len(ruleList[b+1])-1]) != "}" {
 								n := e
 								for {
 									if (len(uriList) - n) <= 0 {

@@ -1,6 +1,6 @@
 package fastresponse
 
-var errPages map[int]func(*Request, *Response, string, int) = map[int]func(*Request, *Response, string, int) {}
+var errPages = map[int]func(*Request, *Response, string, int){}
 
 func GetErrPage(req *Request, res *Response, err string, errCode int) {
 	if errPages[errCode] != nil {

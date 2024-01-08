@@ -42,7 +42,7 @@ type Config struct {
 	// The log level is currently invalid, but it is currently under development
 	LogLevel string
 
-	// Multi core switch, which can increase speed for multi core devices
+	// Multicore switch, which can increase speed for multicore devices
 	Multicore bool
 
 	// HTTP Proxy Mode
@@ -51,7 +51,6 @@ type Config struct {
 
 type httpServer struct {
 	gnet.BuiltinEventEngine
-	/*eng       gnet.Engine*/
 	addr      string
 	multicore bool
 	App       *App
@@ -77,12 +76,12 @@ func NewApp(c *Config) *App {
 	return &App{Router: r, Config: c, ConnectionQueue: map[string]*Connection{}}
 }
 
-func Run(app *App) {
+func Run(app *App) error {
 	// Run the app, it will actually read the configuration and start listening to the port
 	if app.Config.Port == 0 {
 		app.Config.Port = 8080
 	}
 	go fmt.Println("Running App on http://" + app.Config.Host + ":" + strconv.Itoa(app.Config.Port))
 	hs := &httpServer{addr: fmt.Sprintf("tcp://%s:%d", app.Config.Host, app.Config.Port), multicore: app.Config.Multicore, App: app, logLevel: app.Config.LogLevel}
-	gnet.Run(hs, hs.addr, gnet.WithMulticore(app.Config.Multicore))
+	return gnet.Run(hs, hs.addr, gnet.WithMulticore(app.Config.Multicore))
 }
