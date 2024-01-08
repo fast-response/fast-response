@@ -1,7 +1,7 @@
 <p align="center">
 <img src="https://github.com/fast-response/fast-response/assets/92655031/f7c68680-1db6-4a10-b133-f5d148871009" alt="Frame 1" style="max-width: 100%;">
 <br />
-一个基于“gnet”的小巧，快速，高性能的Web框架。
+一个基于“gnet”的小巧、快速、高性能的Web框架。
 <br />
 A small, fast, high-performance web framework based on gnet.
 <br />
@@ -23,7 +23,7 @@ A small, fast, high-performance web framework based on gnet.
 </a>|<a href="https://github.com/fast-response/fast-response/blob/main/README.zh-CN.md" rel="nofollow">
   简体中文
 </a>|<a href="https://github.com/fast-response/fast-response/blob/main/README.zh-TW.md" rel="nofollow">
-  繁体中文
+  繁體中文
 </a>
 </p>
 
