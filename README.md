@@ -28,20 +28,20 @@ A small, fast, high-performance web framework based on gnet.
 </a>
 </p>
 
-## How to Use it
+## Usage
 
 ```shell
 go get github.com/fast-response/fast-response
 ```
 
-## Functions
+## Features
 
 - [X] JSON operate
 - [X] Chunked
 - [X] From-data
 - [X] Cookie operate
 
-## Protocol
+## Protocols
 
 - [X] HTTP/1
 - [X] HTTP/1.1
@@ -50,14 +50,14 @@ go get github.com/fast-response/fast-response
 - [ ] WS
 - [ ] SSL/TLS(Need to wait for `gnet` implementation)
 
-## The person using it
+## People using it
 
 ![玄云海长Logo](https://github.com/fast-response/fast-response/assets/92655031/6a2d2959-e5a4-4cba-a792-e7ae8f4ea897)
 
-## Safety
+## Code Security
 
 [![Security Status](https://www.murphysec.com/platform3/v31/badge/1693852382114177024.svg)](https://www.murphysec.com/console/report/1693852381963182080/1693852382114177024)
 
-# Thanks
+# Special Thanks
 
 [gnet](https://gnet.host)
