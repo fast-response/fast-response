@@ -229,8 +229,17 @@ func toString(src any) string {
 			return toString(sv.Elem().Interface())
 		} else if sv.Kind() == reflect.Slice {
 			return toString(src.([]byte))
+		} else if sv.Kind() == reflect.Map {
+			mapKeys := sv.MapKeys()
+			mapKeysLength := len(mapKeys)
+			tmp:= "{"
+			for i:=0;i<mapKeysLength;i++ {
+				key := toString(mapKeys[i])
+			    tmp += key + ": " +  toString(sv.MapIndex(mapKeys[i]).Interface()) + ", "
+			}
+			return tmp + "}"
 		} else {
-			return toString(s)
+			return "<Type " + sv.Type().String() + ">"
 		}
 	}
 	return ""
